@@ -1,0 +1,18 @@
+{
+  "Your_domain_or_IP": "",
+  "Federation_enabled": true,
+  "User_storage": "internal",
+  "Data_storage": "internal",
+  "Redis": {
+    "Host": "localhost",
+    "Port": 6379,
+    "DB": 0,
+    "password": ""
+  },
+  "SQL": {
+    "Host": "localhost",
+    "Port": 6969,
+    "db_name": "coldwire",
+    "db_password": ""
+  }
+}

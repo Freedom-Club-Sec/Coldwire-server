@@ -28,11 +28,6 @@ func New(path string) (*SQLiteStorage, error) {
             public_key BLOB UNIQUE NOT NULL,
             refetch_date TEXT NOT NULL
         )`,
-        `CREATE TABLE IF NOT EXISTS our_keys (
-            id INTEGER PRIMARY KEY,
-            private_key BLOB UNIQUE NOT NULL,
-            public_key BLOB UNIQUE NOT NULL
-        )`,
         `CREATE TABLE IF NOT EXISTS challenges (
             challenge BLOB PRIMARY KEY,
             id TEXT,
@@ -59,7 +54,6 @@ func (s *SQLiteStorage) SaveUser(id string, publicKey []byte) error {
     _, err := s.Db.Exec(`INSERT INTO users (id, public_key) VALUES (?, ?)`, id, publicKey)
     return err
 }
-
 
 
 func (s *SQLiteStorage) GetUserPublicKeyById(id string) ([]byte, error) {

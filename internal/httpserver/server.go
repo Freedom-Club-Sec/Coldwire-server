@@ -27,6 +27,8 @@ func (s *Server) registerRoutes() {
 
     s.mux.Handle("/data/longpoll", s.jwtMiddleware(http.HandlerFunc(s.dataLongpollHandler)))
     s.mux.Handle("/data/send", s.jwtMiddleware(http.HandlerFunc(s.newDataHandler)))
+
+    s.mux.HandleFunc("/federation/info", s.federationInfoHandler)
 }
 
 func New(host string, port int, cfg *config.Config, dbSvcs *DBServices) *Server {

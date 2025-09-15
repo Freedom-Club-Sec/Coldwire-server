@@ -44,12 +44,34 @@ func VerifyJWT(tokenString string, JWTSecret []byte) (*jwt.Token, jwt.MapClaims,
 }
 
 
+func CreateDSAKeyPair() (*mldsa87.PublicKey, *mldsa87.PrivateKey, error) {
+	return mldsa87.GenerateKey(nil)
+}
+
+func PrivateKeyFromBytes(privateKeyBytes []byte) (*mldsa87.PrivateKey, error) {
+    privateKey := new(mldsa87.PrivateKey)
+    if err := privateKey.UnmarshalBinary(privateKeyBytes); err != nil {
+        return nil, fmt.Errorf("Failed to unmarshal private key: %w", err)
+    }
+    return privateKey, nil
+}
+
 func PublicKeyFromBytes(publicKeyBytes []byte) (*mldsa87.PublicKey, error) {
     publicKey := new(mldsa87.PublicKey)
     if err := publicKey.UnmarshalBinary(publicKeyBytes); err != nil {
         return nil, fmt.Errorf("Failed to unmarshal public key: %w", err)
     }
     return publicKey, nil
+}
+
+func CreateSignature(privateKey *mldsa87.PrivateKey, data []byte, ctx []byte) ([]byte, error) {
+    buf := make([]byte, mldsa87.SignatureSize)
+    err := mldsa87.SignTo(privateKey, data, ctx, false, buf)
+    if err != nil {
+        return nil, err
+    }
+
+    return buf, err
 }
 
 func VerifySignature(publicKey *mldsa87.PublicKey, data []byte, ctx []byte, signature []byte) bool {

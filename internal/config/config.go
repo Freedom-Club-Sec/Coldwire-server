@@ -8,6 +8,7 @@ import (
     "errors"
 
     "github.com/Freedom-Club-Sec/Coldwire-server/internal/utils"
+    "github.com/Freedom-Club-Sec/Coldwire-server/internal/crypto"
     "github.com/Freedom-Club-Sec/Coldwire-server/internal/constants"
 )
 
@@ -33,7 +34,8 @@ type Config struct {
     DataStorage       string      `json:"Data_storage"`
     Redis             redisConfig `json:"Redis"`
     SQL               sqlConfig   `json:"SQL"`
-    JWTSecret         []byte      `json"JWT_Secret_Base64_Encoded"`
+    JWTSecret         []byte      `json:"JWT_Secret_Base64_Encoded"`
+    DSAPrivateKey     []byte      `json:"ML_DSA_87_Private_Key_Base64_Encoded"`
 }
 
 func Load(path string) (*Config, error) {
@@ -63,20 +65,34 @@ func Load(path string) (*Config, error) {
         cfg.JWTSecret, err = utils.SecureRandomBytes(constants.JWT_SECRET_LEN)
         if err != nil {
             return nil, err
-        } 
+        }
 
-        jsonBytes, err := json.MarshalIndent(cfg, "", "  ")
+        cfg.Write(path)
+    }
+
+    if cfg.DSAPrivateKey == nil || len(cfg.DSAPrivateKey) == 0 {
+        _, privateKey, err := crypto.CreateDSAKeyPair()
         if err != nil {
             return nil, err
         }
 
-        err = os.WriteFile(path, jsonBytes, 0644)
+        cfg.DSAPrivateKey, err = privateKey.MarshalBinary()
         if err != nil {
             return nil, err
         }
+        cfg.Write(path)
     }
 
     return &cfg, nil
+}
+
+func (c *Config) Write(path string) error {
+    jsonBytes, err := json.MarshalIndent(c, "", "  ")
+    if err != nil {
+        return err
+    }
+
+    return os.WriteFile(path, jsonBytes, 0644)
 }
 
 func (c *Config) Validate() error {

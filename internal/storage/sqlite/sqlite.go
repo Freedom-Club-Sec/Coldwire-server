@@ -130,7 +130,7 @@ func (s *SQLiteStorage) GetLatestData(recipientId string) ([]byte, error) {
         RETURNING data_blob;
         `, recipientId)
 	if err != nil {
-        if strings.Contains(err.Error(), "database is locked") {
+        if strings.Contains(err.Error(), "locked") {
             return nil, nil
         }
         return nil, err

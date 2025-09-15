@@ -1,2 +1,4 @@
 coldwire_database.sqlite
+configs/config.json
+*.json
 *.swp

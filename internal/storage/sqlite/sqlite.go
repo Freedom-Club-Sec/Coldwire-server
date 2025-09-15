@@ -3,7 +3,6 @@ package sqlite
 import (
     "fmt"
     "errors"
-    "strings"
     "database/sql"
     _ "modernc.org/sqlite"
 
@@ -117,35 +116,40 @@ func (s *SQLiteStorage) CleanupChallenges() error {
 }
 
 /// Implements DataStorage interface
-func (s *SQLiteStorage) GetLatestData(recipientId string) ([]byte, error) {
-    var allData []byte
-
-    rows, err := s.Db.Query(`
-        DELETE FROM data
-        WHERE id IN (
-            SELECT id FROM data
-            WHERE recipient = ?
-            ORDER BY id
-        )
-        RETURNING data_blob;
-        `, recipientId)
-	if err != nil {
-        if strings.Contains(err.Error(), "locked") {
-            return nil, nil
+func (s *SQLiteStorage) GetLatestData(userId string) ([]byte, error) {
+    tx, err := s.Db.Begin()
+    if err != nil {
+        return nil, err 
+    }
+    defer func() {
+        if err != nil {
+            tx.Rollback() 
         }
+    }()
+
+    rows, err := tx.Query("SELECT data_blob FROM data WHERE recipient = ? ORDER BY id", userId)
+    if err != nil {
+        return nil, err 
+    }
+    defer rows.Close()
+
+    var allData []byte
+    for rows.Next() {
+        var data []byte
+        if err := rows.Scan(&data); err != nil { return nil, err }
+        allData = append(allData, data...)
+    }
+
+    if err := rows.Err(); err != nil {
+        return nil, err 
+    }
+
+    _, err = tx.Exec("DELETE FROM data WHERE recipient = ?", userId)
+    if err != nil {
         return nil, err
     }
-	defer rows.Close()
 
-	for rows.Next() {
-		var dataBlob []byte
-		if err := rows.Scan(&dataBlob); err != nil {
-            return nil, err
-		}
-		allData = append(allData, dataBlob...)
-	}
-
-    return allData, nil
+    return allData, tx.Commit()
 }
 
 

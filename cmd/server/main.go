@@ -75,7 +75,7 @@ func main() {
         os.Exit(1)
     }
     
-    dataSvc, err := data.NewDataService(cfg)
+    dataSvc, err := data.NewDataService(cfg, userSvc.Store)
     if err != nil {
         slog.Error("Error while initializing DataStorage service", "error", err)
         os.Exit(1)

@@ -12,16 +12,18 @@ import (
 )
 
 type redisConfig struct {
-    Host string
-    Port uint16
-    DB   uint16 
+    Host     string
+    Password string
+    Port     uint16
+    DB       uint16 
+
 }
 
 type sqlConfig struct {
     Host        string
     Port        uint16 
     DBName      string `json:"db_name"`
-    DBPassword *string `json:"db_password"`
+    DBPassword  string `json:"db_password"`
 }
 
 type Config struct {

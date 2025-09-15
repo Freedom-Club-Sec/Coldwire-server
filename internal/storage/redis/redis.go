@@ -4,52 +4,67 @@ import (
     "github.com/redis/go-redis/v9"
     "context"
 
-    "github.com/Freedom-Club-Sec/Coldwire-server/internal/storage"
 )
 
 type RedisStorage struct {
     client *redis.Client
 }
 
-func New(addr string) *RedisStorage {
-    rdb := redis.NewClient(&redis.Options{Addr: addr})
-    return &RedisStorage{client: rdb}
-}
-
-func (r *RedisStorage) SaveChallenge(challenge string, id string, publicKey string) error {
-    data := []string{id, publicKey}
-    jsonBytes, err := json.Marshal(data)
-    if err != nil {
-        return err
-    }
-
-    jsonString = string(jsonBytes)
-
-    key := "challenges:" + challenge
-
-    return r.client.Set(context.Background(), key, jsonString, 0).Err()
-}
-
-func (r *RedisStorage) GetChallengeData(challenge string) (string, string, error) {
-    val, err := r.client.Get(context.Background(), challenge).Result()
-    if err != nil {
-        return "", "", err
-    }
-
-    key := "challenges:" + challenge
+func New(addr string, port string, password string, db int) (*RedisStorage, error) {
+    rdb := redis.NewClient(&redis.Options{
+        Addr: addr + ":" + port,
+        Password: password,
+        DB: db,
+    })
     
-    r.DeleteKey(key)
-
-    var data []string
-    err = json.Unmarshal(val, &data)
+    _, err := rdb.Ping(context.Background()).Result()
     if err != nil {
-        return "", "", err
+        return nil, err
     }
 
-    return data[0], data[1], nil
+    return &RedisStorage{client: rdb}, nil
 }
 
-func (r *RedisStorage) DeleteKey(key string) error {
-    return r.client.Del(context.Background(), key).Err()
+
+/// Implements DataStorage interface
+func (s *RedisStorage) GetLatestData(userId string) ([]byte, error) {
+    ctx := context.Background()
+
+    // Lua script: get current items, remove them from the list
+    luaScript := `
+        local len = redis.call('LLEN', KEYS[1])
+        if len == 0 then
+            return {}
+        end
+        local items = redis.call('LRANGE', KEYS[1], 0, len - 1)
+        redis.call('LTRIM', KEYS[1], len, -1)
+        return items
+    `
+
+    // Execute Lua script
+    result, err := s.client.Eval(ctx, luaScript, []string{userId}).Result()
+    if err != nil {
+        return nil, err
+    }
+
+    // Convert []interface{} to []byte
+    var allData []byte
+    if items, ok := result.([]interface{}); ok {
+        for _, item := range items {
+            if b, ok := item.(string); ok {
+                allData = append(allData, []byte(b)...)
+            }
+        }
+    }
+
+    return allData, nil
 }
 
+
+func (s *RedisStorage) InsertData(dataBlob []byte, recipientId string) error {
+    return s.client.RPush(context.Background(), recipientId, dataBlob).Err()
+}
+
+func (s *RedisStorage) ExitCleanup() error {
+    return nil
+}

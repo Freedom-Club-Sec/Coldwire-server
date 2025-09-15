@@ -4,19 +4,22 @@ import (
     "fmt"
     "bytes"
     "errors"
+    "strconv"
 
     "github.com/Freedom-Club-Sec/Coldwire-server/internal/config"
     "github.com/Freedom-Club-Sec/Coldwire-server/internal/constants"
     "github.com/Freedom-Club-Sec/Coldwire-server/internal/storage/sqlite"
+    "github.com/Freedom-Club-Sec/Coldwire-server/internal/storage/redis"
     "github.com/Freedom-Club-Sec/Coldwire-server/internal/storage"
 )
 
 type DataService struct {
     Store storage.DataStorage
     Cfg *config.Config
+    UserStore storage.UserStorage
 }
 
-func NewDataService(cfg *config.Config) (*DataService, error) {
+func NewDataService(cfg *config.Config, userStore storage.UserStorage) (*DataService, error) {
     var s storage.DataStorage
     switch cfg.DataStorage {
     case "internal", "sqlite":
@@ -25,11 +28,20 @@ func NewDataService(cfg *config.Config) (*DataService, error) {
             return nil, err
         }
         s = sqliteStore
+
+    case "redis":
+        portString := strconv.FormatUint(uint64(cfg.Redis.Port), 10)
+        dbInt      := int(cfg.Redis.DB)
+        redisStore, err := redis.New(cfg.Redis.Host, portString, cfg.Redis.Password, dbInt)
+        if err != nil {
+            return nil, err
+        }
+        s = redisStore
     default:
         return nil, fmt.Errorf("Unknown DataStorage type (%s)", cfg.DataStorage)
     }
 
-    return &DataService{Store: s, Cfg: cfg}, nil
+    return &DataService{Store: s, Cfg: cfg, UserStore: userStore}, nil
 }
 
 
@@ -39,7 +51,7 @@ func (svc *DataService) GetLatestData(userId string) ([]byte, error) {
 }
 
 func (svc *DataService) InsertData(data []byte, senderId string, recipientId string) error {
-    exists, err := svc.Store.CheckUserIdExists(recipientId)
+    exists, err := svc.UserStore.CheckUserIdExists(recipientId)
     if err != nil {
         return err
     }

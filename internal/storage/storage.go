@@ -12,8 +12,7 @@ type UserStorage interface {
 }
 
 type DataStorage interface {
-    GetLatestData(recipientId string) ([]byte, error)
+    GetLatestData(userId string) ([]byte, error)
     InsertData(data []byte, recipientId string) error
-    CheckUserIdExists(id string) (bool, error)
     ExitCleanup() error
 }

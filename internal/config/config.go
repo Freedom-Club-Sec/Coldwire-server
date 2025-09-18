@@ -28,14 +28,16 @@ type sqlConfig struct {
 }
 
 type Config struct {
-    DomainOrIP        string      `json:"Your_domain_or_IP"`
-    FederationEnabled bool        `json:"Federation_enabled"`
-    UserStorage       string      `json:"User_storage"`
-    DataStorage       string      `json:"Data_storage"`
-    Redis             redisConfig `json:"Redis"`
-    SQL               sqlConfig   `json:"SQL"`
-    JWTSecret         []byte      `json:"JWT_Secret_Base64_Encoded"`
-    DSAPrivateKey     []byte      `json:"ML_DSA_87_Private_Key_Base64_Encoded"`
+    DomainOrIP         string      `json:"Your_domain_or_IP"`
+    FederationEnabled  bool        `json:"Federation_enabled"`
+    UserStorage        string      `json:"User_storage"`
+    DataStorage        string      `json:"Data_storage"`
+    Redis              redisConfig `json:"Redis"`
+    SQL                sqlConfig   `json:"SQL"`
+    BlacklistedDomains []string    `json:"Blacklisted_Domain_Names"`
+    BlacklistedIPs     []string    `json:"Blacklisted_IP_nets"`
+    JWTSecret          []byte      `json:"JWT_Secret_Base64_Encoded"`
+    DSAPrivateKey      []byte      `json:"ML_DSA_87_Private_Key_Base64_Encoded"`
 }
 
 func Load(path string) (*Config, error) {

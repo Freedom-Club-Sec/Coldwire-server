@@ -5,6 +5,8 @@ type UserStorage interface {
     CheckUserIdExists(id string) (bool, error)
     GetUserPublicKeyById(id string) ([]byte, error)
     SaveChallenge(challenge []byte, id interface{}, publicKey interface{}) error
+    SaveServerInfo(url string, publicKey []byte, refetchDate string) error
+    GetServerInfo(url string) ([]byte, string, error)
     GetChallengeData(challenge []byte) ([]byte, string, error) 
     ExitCleanup() error
     CleanupChallenges() error

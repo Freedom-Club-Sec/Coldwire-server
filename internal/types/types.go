@@ -19,8 +19,15 @@ type AuthenticateVerificationResponse struct {
     Token  string `json:"token"`
 }
 
-type FederationResponse struct {
+type FederationInfoResponse struct {
     PublicKey   []byte `json:"public_key"`
     RefetchDate string `json:"refetch_date"`
     Signature   []byte `json:"signature"`
+}
+
+
+type FederationSendRequest struct {
+    Recipient string `json:"recipient"`
+    Sender    string `json:"sender"`
+    Url       string `json:"url"`
 }

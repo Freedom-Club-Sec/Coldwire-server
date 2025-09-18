@@ -9,7 +9,6 @@ import (
 
     "github.com/golang-jwt/jwt/v5"
     "github.com/Freedom-Club-Sec/Coldwire-server/internal/constants"
-    "github.com/Freedom-Club-Sec/Coldwire-server/internal/utils"
 )
 
 
@@ -41,7 +40,8 @@ func (s *Server) newDataHandler(w http.ResponseWriter, r *http.Request) {
 
     var metadata map[string]interface{}
     if err := json.Unmarshal([]byte(metadataStr), &metadata); err != nil {
-        http.Error(w, "Invalid JSON metadata: "+err.Error(), http.StatusBadRequest)
+        slog.Error("Invalid JSON metadata.", "userId", userId, "error", err)
+        http.Error(w, "Invalid JSON metadata.", http.StatusBadRequest)
         return
     }
 
@@ -57,22 +57,18 @@ func (s *Server) newDataHandler(w http.ResponseWriter, r *http.Request) {
         return
     }
 
-    // rework this one for federation
-    if !utils.IsAllDigits(recipient) {
-        http.Error(w, "Recipient is invalid", http.StatusBadRequest)
-        return
-    }
-
     file, _, err := r.FormFile("blob")
     if err != nil {
-        http.Error(w, "Failed to read file: "+err.Error(), http.StatusBadRequest)
+        slog.Error("Failed to read blob from form.", "userId", userId, "error", err)
+        http.Error(w, "Failed to read blob from form.", http.StatusBadRequest)
         return
     }
     defer file.Close()
 
     blobData, err := io.ReadAll(file)
     if err != nil {
-        http.Error(w, "Failed to read blob data: "+err.Error(), http.StatusBadRequest)
+        slog.Error("Failed to read blob data.", "userId", userId, "error", err)
+        http.Error(w, "Failed to read blob data.", http.StatusBadRequest)
         return
     }
 
@@ -83,7 +79,8 @@ func (s *Server) newDataHandler(w http.ResponseWriter, r *http.Request) {
     
 
     if err := s.DbSvcs.DataService.InsertData(blobData, userId, recipient); err != nil {
-        http.Error(w, "Failed to process data: "+err.Error(), http.StatusBadRequest)
+        slog.Error("Failure when attempted to insert data.", "userId", userId, "recipient", recipient, "error", err, "blobData", blobData)
+        http.Error(w, "Failed to process data.", http.StatusBadRequest)
         return
     }
 

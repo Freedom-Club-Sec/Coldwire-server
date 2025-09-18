@@ -76,7 +76,41 @@ func (s *SQLiteStorage) SaveChallenge(challenge []byte, id interface{}, publicKe
     _, err := s.Db.Exec(`INSERT INTO challenges (challenge, id, public_key) VALUES (?, ?, ?)`, challenge, id, publicKey)
     return err    
 }
+  
 
+func (s *SQLiteStorage) SaveServerInfo(url string, publicKey []byte, refetchDate string) error {
+    _, err := s.Db.Exec(`INSERT INTO servers (url, public_key, refetch_date) VALUES (?, ?, ?)`, url, publicKey, refetchDate)
+    if err != nil {
+        _, err = s.Db.Exec(`UPDATE servers SET public_key = ?, refetch_date = ? WHERE url = ?`, publicKey, refetchDate, url)
+        if err != nil {
+            return err
+        }
+    }
+    return err
+}
+
+func (s *SQLiteStorage) GetServerInfo(url string) ([]byte, string, error) {
+    var (
+        publicKey   []byte
+        refetchDate string
+    )
+    err := s.Db.QueryRow("SELECT public_key, refetch_date FROM servers WHERE url = ?", url).Scan(&publicKey, &refetchDate)
+	if err != nil {
+        if err == sql.ErrNoRows {
+            return nil, "", nil
+        }
+        return nil, "", err
+	}
+
+    return publicKey, refetchDate, nil
+}
+
+
+
+func (s *SQLiteStorage) SaveCh(challenge []byte, id interface{}, publicKey interface{}) error {
+    _, err := s.Db.Exec(`INSERT INTO challenges (challenge, id, public_key) VALUES (?, ?, ?)`, challenge, id, publicKey)
+    return err    
+}
 
 func (s *SQLiteStorage) GetChallengeData(challenge []byte) ([]byte, string, error) {
     var (

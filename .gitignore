@@ -1,4 +1,3 @@
 coldwire_database.sqlite
-configs/testing_config.json
-*.json
+testing_config.json
 *.swp

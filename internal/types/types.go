@@ -31,3 +31,8 @@ type FederationSendRequest struct {
     Sender    string `json:"sender"`
     Url       string `json:"url"`
 }
+
+
+type DataSendRequest struct {
+    Recipient string `json:"recipient"`
+}

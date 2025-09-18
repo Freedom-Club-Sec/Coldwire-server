@@ -98,51 +98,59 @@ func (s *Server) federationSendHandler(w http.ResponseWriter, r *http.Request) {
     }
 
     if metadata.Recipient == "" {
-        slog.Error("Empty recipient from request metadata.")
+        slog.Error("Empty recipient from request metadata.", "metadata", metadata)
         http.Error(w, "Missing recipient in metadata", http.StatusBadRequest)
         return
     }
 
 
     if metadata.Sender == "" {
+        slog.Error("Empty sender from request metadata.", "metadata", metadata)
         http.Error(w, "Missing sender in metadata", http.StatusBadRequest)
         return
     }
 
     if metadata.Url == "" {
+        slog.Error("Empty url from request metadata.", "metadata", metadata)
         http.Error(w, "Missing url in metadata", http.StatusBadRequest)
         return
     }
 
     if !utils.IsAllDigits(metadata.Sender)  {
+        slog.Error("Malformed sender id from request metadata.", "sender", metadata.Sender)
         http.Error(w, "Malformed sender.", http.StatusBadRequest)
         return
     }
 
     if !utils.IsAllDigits(metadata.Recipient)  {
+        slog.Error("Malformed recipient id from request metadata.", "recipient", metadata.Recipient)
         http.Error(w, "Malformed recipient.", http.StatusBadRequest)
         return
     }
 
     if !utils.IsValidDomainOrIP(metadata.Url, s.Cfg.BlacklistedIPs, s.Cfg.BlacklistedDomains)  {
+        slog.Error("Malformed url from request metadata.", "url", metadata.Url, "blacklistedIPs", s.Cfg.BlacklistedIPs, "blacklistedDomains", s.Cfg.BlacklistedDomains)
         http.Error(w, "Invalid url.", http.StatusBadRequest)
         return
     }
 
     file, _, err := r.FormFile("blob")
     if err != nil {
-        http.Error(w, "Failed to read file: "+err.Error(), http.StatusBadRequest)
+        slog.Error("Error while reading blob file.", "error", err)
+        http.Error(w, "Failed to read blob file.", http.StatusBadRequest)
         return
     }
     defer file.Close()
 
     blobData, err := io.ReadAll(file)
     if err != nil {
-        http.Error(w, "Failed to read blob data: "+err.Error(), http.StatusBadRequest)
+        slog.Error("Error while reading blob data.", "error", err)
+        http.Error(w, "Failed to read blob data.", http.StatusBadRequest)
         return
     }
 
     if len(blobData) == 0 {
+        slog.Error("Blob is empty.", "metadata", metadata)
         http.Error(w, "Empty blob is not allowed", http.StatusBadRequest)
         return
     }

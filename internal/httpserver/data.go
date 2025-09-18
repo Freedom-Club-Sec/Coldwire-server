@@ -8,6 +8,7 @@ import (
     "time"
 
     "github.com/golang-jwt/jwt/v5"
+    "github.com/Freedom-Club-Sec/Coldwire-server/internal/types"
     "github.com/Freedom-Club-Sec/Coldwire-server/internal/constants"
 )
 
@@ -37,25 +38,21 @@ func (s *Server) newDataHandler(w http.ResponseWriter, r *http.Request) {
         http.Error(w, "Missing metadata", http.StatusBadRequest)
         return
     }
+    
+    var metadata types.DataSendRequest 
 
-    var metadata map[string]interface{}
     if err := json.Unmarshal([]byte(metadataStr), &metadata); err != nil {
-        slog.Error("Invalid JSON metadata.", "userId", userId, "error", err)
+        slog.Error("Error while parsing request JSON metadata.", "error", err)
         http.Error(w, "Invalid JSON metadata.", http.StatusBadRequest)
         return
     }
 
-    recipientVal, ok := metadata["recipient"]
-    if !ok {
+    if metadata.Recipient == "" {
+        slog.Error("Empty recipient from request metadata.", "metadata", metadata)
         http.Error(w, "Missing recipient in metadata", http.StatusBadRequest)
         return
     }
 
-    recipient, ok := recipientVal.(string)
-    if !ok || recipient == "" {
-        http.Error(w, "Recipient must be a string", http.StatusBadRequest)
-        return
-    }
 
     file, _, err := r.FormFile("blob")
     if err != nil {
@@ -78,8 +75,8 @@ func (s *Server) newDataHandler(w http.ResponseWriter, r *http.Request) {
     }
     
 
-    if err := s.DbSvcs.DataService.InsertData(blobData, userId, recipient); err != nil {
-        slog.Error("Failure when attempted to insert data.", "userId", userId, "recipient", recipient, "error", err, "blobData", blobData)
+    if err := s.DbSvcs.DataService.InsertData(blobData, userId, metadata.Recipient); err != nil {
+        slog.Error("Failure when attempted to insert data.", "userId", userId, "error", err, "metadata", metadata, "blobData", blobData)
         http.Error(w, "Failed to process data.", http.StatusBadRequest)
         return
     }

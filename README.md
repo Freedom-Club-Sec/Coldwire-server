@@ -12,19 +12,38 @@ If you want better performance, you might want configure "`SQL`" and or "`Redis`
 
 # Setup
 
-Download prebuilt binaries from releases
+Download prebuilt binaries from releases.
 
-Or optionally compile the code:
+Or optionally compile the source code using:
 ```bash
 git clone https://github.com/Freedom-Club-Sec/Coldwire-server.git
 cd Coldwire-server
-make
+make build
+```
+The compiled binary will be in `bin/` folder.
+
+# Example Usage
+
+```bash
+./coldwire-server-linux-amd64 --help
+Usage of ./coldwire-server-linux-amd64:
+  -c string
+        Path to JSON configuration file (shorthand) (default "configs/config.json")
+  -config string
+        Path to JSON configuration file (default "configs/config.json")
+  -h string
+        Server address to listen on (shorthand) (default "127.0.0.1")
+  -host string
+        Server address to listen on (default "127.0.0.1")
+  -p int
+        Server port to listen on (shorthand) (default 8000)
+  -port int
+        Server port to listen on (default 8000)
 ```
 
-# Usage
+
+Run server:
 
 ```bash
 ./coldwire-server -c your_config_file.json
 ```
-
-

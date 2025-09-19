@@ -6,7 +6,7 @@ on:
       - "v*"
 
 permissions:
-  contents: write  # required to create releases
+  contents: write 
 
 jobs:
   build:
@@ -63,20 +63,18 @@ jobs:
           echo "$latest_notes" >> $GITHUB_ENV
           echo "EOF" >> $GITHUB_ENV
 
-      - name: Publish GitHub Release
-        uses: actions/create-release@v1
-        with:
-          tag_name: ${{ github.ref_name }}
-          release_name: Release ${{ github.ref_name }}
-          body: ${{ env.LATEST_NOTES }}
-          draft: false
-          prerelease: false
-
-      - name: Upload release assets
+      - name: Create GitHub release and upload assets
         run: |
+          if ! gh release view "${GITHUB_REF_NAME}" >/dev/null 2>&1; then
+            gh release create "${GITHUB_REF_NAME}" \
+              --title "Release ${GITHUB_REF_NAME}" \
+              --notes "$LATEST_NOTES"
+          fi
+
+          # Upload all binaries
           for f in bin/*; do
             [ -f "$f" ] || continue
             gh release upload "${GITHUB_REF_NAME}" "$f" --clobber
           done
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

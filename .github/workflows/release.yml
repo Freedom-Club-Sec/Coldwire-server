@@ -48,12 +48,12 @@ jobs:
 
       - name: Compute SHA256 checksums
         run: |
-          echo "## Checksums" > bin/CHECKSUMS.md
+          echo "## Checksums" > bin/CHECKSUMS.sha256
           for f in bin/*; do
             [ -f "$f" ] || continue
-            sha256sum "$f" >> bin/CHECKSUMS.md
+            sha256sum "$f" >> bin/CHECKSUMS.sha256
           done
-          cat bin/CHECKSUMS.md
+          cat bin/CHECKSUMS.sha256
 
       - name: Extract latest changelog section
         id: changelog

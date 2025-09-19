@@ -93,6 +93,6 @@ jobs:
           done
 
           # Upload SHA256 checksum
-          gh release upload "${GITHUB_REF_NAME}" "CHECKSUM.sha256" --clobber
+          gh release upload "${GITHUB_REF_NAME}" "CHECKSUMS.sha256" --clobber
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

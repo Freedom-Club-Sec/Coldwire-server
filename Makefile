@@ -4,14 +4,16 @@ BIN_DIR = bin
 GOOS ?= $(shell go env GOOS)
 GOARCH ?= $(shell go env GOARCH)
 
-.PHONY: build
+.PHONY: build clean
 
 build:
 	mkdir -p $(BIN_DIR)
-	GOOS=$(GOOS) GOARCH=$(GOARCH) go build -o $(BIN_DIR)/$(BINARY_NAME)-$(GOOS)-$(GOARCH) ./cmd/server
 
-	go build -o $(BIN_DIR)/$(BINARY_NAME) ./cmd/server
+	# this for ci
+    GOOS=$(GOOS) GOARCH=$(GOARCH) go build -o $(BIN_DIR)/$(BINARY_NAME)-$(GOOS)-$(GOARCH) ./cmd/server
 
+	# this is for local builds
+    GOOS=$(GOOS) GOARCH=$(GOARCH) go build -o $(BIN_DIR)/$(BINARY_NAME) ./cmd/server
 
 clean:
 	rm -rf $(BIN_DIR)

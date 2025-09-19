@@ -46,24 +46,7 @@ jobs:
         with:
           path: bin/
 
-      - name: Compute SHA256 checksums
-        run: |
-          echo "## Checksums" > bin/CHECKSUMS.sha256
-          for f in bin/*; do
-            [ -f "$f" ] || continue
-            sha256sum "$f" >> bin/CHECKSUMS.sha256
-          done
-          cat bin/CHECKSUMS.sha256
-
-      - name: Extract latest changelog section
-        id: changelog
-        run: |
-          latest_notes=$(awk '/^## \[v/{if (found) exit; found=1; next} found {print}' CHANGELOG.md)
-          echo "LATEST_NOTES<<EOF" >> $GITHUB_ENV
-          echo "$latest_notes" >> $GITHUB_ENV
-          echo "EOF" >> $GITHUB_ENV
-
-      - name: Create GitHub release and upload assets
+      - name: Flatten artifacts
         run: |
           # Flatten the artifcats
           shopt -s nullglob
@@ -76,6 +59,26 @@ jobs:
             fi
           done
 
+
+      - name: Compute SHA256 checksums
+        run: |
+          echo "## Checksums" > CHECKSUMS.sha256
+          for f in bin/*; do
+            [ -f "$f" ] || continue
+            sha256sum "$f" >> CHECKSUMS.sha256
+          done
+          cat CHECKSUMS.sha256
+
+      - name: Extract latest changelog section
+        id: changelog
+        run: |
+          latest_notes=$(awk '/^## \[v/{if (found) exit; found=1; next} found {print}' CHANGELOG.md)
+          echo "LATEST_NOTES<<EOF" >> $GITHUB_ENV
+          echo "$latest_notes" >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
+
+      - name: Create GitHub release and upload assets
+        run: |
           # Create release
           if ! gh release view "${GITHUB_REF_NAME}" >/dev/null 2>&1; then
             gh release create "${GITHUB_REF_NAME}" \
@@ -88,5 +91,8 @@ jobs:
             [ -f "$f" ] || continue
             gh release upload "${GITHUB_REF_NAME}" "$f" --clobber
           done
+
+          # Upload SHA256 checksum
+          gh release upload "${GITHUB_REF_NAME}" "CHECKSUM.sha256" --clobber
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

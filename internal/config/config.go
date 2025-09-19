@@ -24,6 +24,7 @@ type sqlConfig struct {
     Host        string
     Port        uint16 
     DBName      string `json:"db_name"`
+    DBUser      string `json:"db_user"`
     DBPassword  string `json:"db_password"`
 }
 

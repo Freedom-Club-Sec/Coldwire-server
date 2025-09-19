@@ -20,6 +20,7 @@ import (
     "github.com/Freedom-Club-Sec/Coldwire-server/internal/crypto"
     "github.com/Freedom-Club-Sec/Coldwire-server/internal/types"
     "github.com/Freedom-Club-Sec/Coldwire-server/internal/storage/sqlite"
+    "github.com/Freedom-Club-Sec/Coldwire-server/internal/storage/mysql"
     "github.com/Freedom-Club-Sec/Coldwire-server/internal/storage/redis"
     "github.com/Freedom-Club-Sec/Coldwire-server/internal/storage"
 )
@@ -39,6 +40,24 @@ func NewDataService(cfg *config.Config, userStore storage.UserStorage) (*DataSer
             return nil, err
         }
         s = sqliteStore
+
+    case "mysql", "sql", "mariadb":
+        sqlCfg := mysql.SQLDSN{
+            User:                 cfg.SQL.DBUser,
+            Passwd:               cfg.SQL.DBPassword, 
+            Net:                  "tcp",
+            Addr:                 fmt.Sprintf("%s:%d", cfg.SQL.Host, cfg.SQL.Port),
+            DBName:               cfg.SQL.DBName,
+            ParseTime:            false,
+            AllowNativePasswords: true,
+            Collation:            "utf8mb4_unicode_ci",
+        }
+        
+        sqlStore, err := mysql.New(sqlCfg)
+        if err != nil {
+            return nil, err
+        }
+        s = sqlStore
 
     case "redis":
         portString := strconv.FormatUint(uint64(cfg.Redis.Port), 10)

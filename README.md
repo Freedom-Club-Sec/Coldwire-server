@@ -10,12 +10,21 @@ That's it. No further modification needed
 If you want better performance, you might want configure "`SQL`" and or "`Redis`" services: consult [docs/configuration.md for more details](https://github.com/Freedom-Club-Sec/Coldwire-server/blob/main/docs/configuration.md)
 
 
-# Usage
+# Setup
+
+Download prebuilt binaries from releases
+
+Or optionally compile the code:
 ```bash
-go build cmd/server/main.go
+git clone https://github.com/Freedom-Club-Sec/Coldwire-server.git
+cd Coldwire-server
+make
 ```
 
-Then running:
+# Usage
+
 ```bash
-./main -c your_config_path
+./coldwire-server -c your_config_file.json
 ```
+
+

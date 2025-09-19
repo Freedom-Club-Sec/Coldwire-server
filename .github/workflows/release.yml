@@ -65,6 +65,18 @@ jobs:
 
       - name: Create GitHub release and upload assets
         run: |
+          # Flatten the artifcats
+          shopt -s nullglob
+          for d in bin/*; do
+            if [ -d "$d" ]; then
+              for f in "$d"/*; do
+                mv "$f" bin/
+              done
+              rmdir "$d"
+            fi
+          done
+
+          # Create release
           if ! gh release view "${GITHUB_REF_NAME}" >/dev/null 2>&1; then
             gh release create "${GITHUB_REF_NAME}" \
               --title "Release ${GITHUB_REF_NAME}" \

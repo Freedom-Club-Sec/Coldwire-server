@@ -24,15 +24,13 @@ jobs:
 
       - name: Build binaries
         run: |
-          mkdir -p dist
-          GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} \
-            go build -o dist/coldwire-server-${{ matrix.goos }}-${{ matrix.goarch }}
+          make build BINARY_NAME=coldwire-server GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }}
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
           name: binaries
-          path: dist/*
+          path: bin/*
 
   release:
     runs-on: ubuntu-latest
@@ -45,15 +43,15 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: binaries
-          path: dist
-      
+          path: bin
+
       - name: Compute SHA256 checksums
         run: |
-          echo "## Checksums" > dist/CHECKSUMS.md
-          for f in dist/*; do
-            sha256sum "$f" >> dist/CHECKSUMS.md
+          echo "## Checksums" > bin/CHECKSUMS.md
+          for f in bin/*; do
+            sha256sum "$f" >> bin/CHECKSUMS.md
           done
-          cat dist/CHECKSUMS.md
+          cat bin/CHECKSUMS.md
 
       - name: Extract latest changelog section
         id: changelog
@@ -65,8 +63,9 @@ jobs:
 
       - name: Publish GitHub Release
         run: |
-          gh release create "$GITHUB_REF_NAME" dist/* \
+          gh release create "$GITHUB_REF_NAME" bin/* \
             --title "Release $GITHUB_REF_NAME" \
             --notes "$LATEST_NOTES"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+

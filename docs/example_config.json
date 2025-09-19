@@ -11,8 +11,9 @@
   },
   "SQL": {
     "Host": "localhost",
-    "Port": 6969,
+    "Port": 3306,
     "db_name": "coldwire",
+    "db_user": "",
     "db_password": ""
   },
   "Blacklisted_Domain_Names": [

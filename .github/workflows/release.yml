@@ -40,11 +40,13 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Show downloaded files
+        run: ls -la bin || true
+
       - name: Download build artifacts
         uses: actions/download-artifact@v4
         with:
-          name: binaries-*
-          path: bin
+          path: bin/
 
       - name: Compute SHA256 checksums
         run: |

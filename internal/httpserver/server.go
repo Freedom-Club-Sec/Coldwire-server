@@ -2,7 +2,9 @@ package httpserver
 
 import (
 	"fmt"
+    "strings"
 	"net/http"
+    "embed"
 
 	"github.com/Freedom-Club-Sec/Coldwire-server/internal/authenticate"
 	"github.com/Freedom-Club-Sec/Coldwire-server/internal/config"
@@ -21,6 +23,9 @@ type DBServices struct {
 	DataService *data.DataService
 }
 
+//go:embed web/*
+var webFiles embed.FS
+
 func (s *Server) registerRoutes() {
 	s.mux.HandleFunc("/authenticate/init", s.authenticateInitHandler)
 	s.mux.HandleFunc("/authenticate/verify", s.authenticateVerificationHandler)
@@ -30,6 +35,34 @@ func (s *Server) registerRoutes() {
 
 	s.mux.HandleFunc("/federation/info", s.federationInfoHandler)
 	s.mux.HandleFunc("/federation/send", s.federationSendHandler)
+
+
+    s.mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+        path := r.URL.Path
+        if path == "/" {
+            path = "/index.html"
+        }
+
+        // Serve file from embedded FS
+        data, err := webFiles.ReadFile("web" + path)
+        if err != nil {
+            http.NotFound(w, r)
+            return
+        }
+
+        // Simple content-type detection for html/css/js
+        switch {
+        case strings.HasSuffix(path, ".html"):
+            w.Header().Set("Content-Type", "text/html; charset=utf-8")
+        case strings.HasSuffix(path, ".css"):
+            w.Header().Set("Content-Type", "text/css; charset=utf-8")
+        case strings.HasSuffix(path, ".js"):
+            w.Header().Set("Content-Type", "application/javascript")
+        }
+
+        w.Write(data)
+    })
+
 }
 
 func New(host string, port int, cfg *config.Config, dbSvcs *DBServices) *Server {

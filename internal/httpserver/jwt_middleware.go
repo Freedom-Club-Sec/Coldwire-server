@@ -1,15 +1,15 @@
 package httpserver
 
 import (
-    "net/http"
-    "context"
-    "strings"
+	"context"
+	"net/http"
+	"strings"
 
-    "github.com/Freedom-Club-Sec/Coldwire-server/internal/crypto"
+	"github.com/Freedom-Club-Sec/Coldwire-server/internal/crypto"
 )
 
+type ctxKey string
 
-type ctxKey string 
 var claimsKey = ctxKey("jwtClaims")
 
 func (s *Server) jwtMiddleware(next http.Handler) http.Handler {

@@ -24,7 +24,6 @@ jobs:
 
       - name: Build binaries
         run: |
-          make clean
           make build BINARY_NAME=coldwire-server GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }}
 
       - name: Upload artifacts

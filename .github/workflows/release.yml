@@ -12,7 +12,6 @@ jobs:
       matrix:
         goos: [linux, windows, darwin]
         goarch: [amd64, arm64]
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -24,12 +23,20 @@ jobs:
 
       - name: Build binaries
         run: |
-          make build BINARY_NAME=coldwire-server GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }}
+          make CI=true build \
+            BINARY_NAME=coldwire-server \
+            GOOS=${{ matrix.goos }} \
+            GOARCH=${{ matrix.goarch }} \
+            BIN_DIR=bin
+        # make will create bin/<binary>-<os>-<arch>(.exe)
+
+      - name: Show bin contents (build)
+        run: ls -la bin || true
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          # Use unique artifact name per OS/ARCH to avoid conflicts
+          # Unique artifact name per OS/ARCH
           name: binaries-${{ matrix.goos }}-${{ matrix.goarch }}
           path: bin/*
 
@@ -40,34 +47,95 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Show downloaded files
-        run: ls -la bin || true
-
       - name: Download build artifacts
         uses: actions/download-artifact@v4
         with:
           path: bin/
 
+      - name: Show downloaded tree
+        run: |
+          echo "=== bin before flattening ==="
+          ls -laR bin || true
+
+      - name: Flatten artifacts into bin/
+        run: |
+          set -eu
+          shopt -s nullglob || true
+          # move files from per-artifact subfolders into bin/
+          for d in bin/*; do
+            if [ -d "$d" ]; then
+              # move files (if any) up one level
+              for f in "$d"/*; do
+                # if there are files, move them
+                if [ -e "$f" ]; then
+                  mv "$f" bin/ || true
+                fi
+              done
+              # remove the (now likely empty) folder
+              rmdir "$d" 2>/dev/null || true
+            fi
+          done
+          echo "=== bin after flattening ==="
+          ls -la bin || true
+
       - name: Compute SHA256 checksums
         run: |
+          set -eu
+          mkdir -p bin
           echo "## Checksums" > bin/CHECKSUMS.md
-          for f in bin/*; do
-            sha256sum "$f" >> bin/CHECKSUMS.md
-          done
+          # only files, skip the CHECKSUMS.md itself
+          find bin -type f -not -name 'CHECKSUMS.md' -print0 | xargs -0 -n1 sha256sum >> bin/CHECKSUMS.md
           cat bin/CHECKSUMS.md
 
       - name: Extract latest changelog section
         id: changelog
         run: |
+          # Grab the latest "## [v..." section (lines after first match until the next '## [v' or EOF)
           latest_notes=$(awk '/^## \[v/{if (found) exit; found=1; next} found {print}' CHANGELOG.md)
+          if [ -z "$latest_notes" ]; then
+            latest_notes="(no changelog entry found)"
+          fi
           echo "LATEST_NOTES<<EOF" >> $GITHUB_ENV
           echo "$latest_notes" >> $GITHUB_ENV
           echo "EOF" >> $GITHUB_ENV
 
-      - name: Publish GitHub Release
-        run: |
-          gh release create "$GITHUB_REF_NAME" bin/* \
-            --title "Release $GITHUB_REF_NAME" \
-            --notes "$LATEST_NOTES"
+      - name: Create GitHub Release
+        id: create_release
+        uses: actions/create-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref_name }}
+          release_name: Release ${{ github.ref_name }}
+          body: ${{ env.LATEST_NOTES }}
+          draft: false
+          prerelease: false
+
+      - name: Upload release assets
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          UPLOAD_URL: ${{ steps.create_release.outputs.upload_url }}
+        run: |
+          set -eu
+          # upload_url is a template like: https://uploads.github.com/repos/OWNER/REPO/releases/ID/assets{?name,label}
+          # we need to strip the template braces part
+          base_url="${UPLOAD_URL%\{*}"
+          echo "Upload base URL: $base_url"
+
+          for f in bin/*; do
+            if [ -f "$f" ]; then
+              name=$(basename "$f")
+              echo "Uploading $name ..."
+              curl --fail -sS -X POST \
+                -H "Authorization: Bearer $GITHUB_TOKEN" \
+                -H "Content-Type: application/octet-stream" \
+                --data-binary @"$f" \
+                "$base_url?name=$name"
+            fi
+          done
+
+      - name: Show final assets on release (sanity)
+        run: ls -la bin || true
+      
+      - name: Clean build artifacts
+        run: make clean

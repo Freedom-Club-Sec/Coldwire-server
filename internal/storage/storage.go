@@ -14,6 +14,7 @@ type UserStorage interface {
 
 type DataStorage interface {
 	GetLatestData(userId string) ([]byte, error)
-	InsertData(data []byte, recipientId string) error
+	DeleteAck(userId string, acks [][]byte) error
+	InsertData(data []byte, ackId []byte, recipientId string) error
 	ExitCleanup() error
 }

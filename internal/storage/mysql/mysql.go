@@ -2,6 +2,7 @@ package mysql
 
 import (
 	"database/sql"
+    "strings"
 	"errors"
 	"fmt"
 	gmysql "github.com/go-sql-driver/mysql"
@@ -40,6 +41,7 @@ func New(dsn SQLDSN) (*SQLStorage, error) {
         )`,
 		`CREATE TABLE IF NOT EXISTS data (
             id INTEGER AUTO_INCREMENT PRIMARY KEY,
+            ack_id BINARY(32) NOT NULL,
             recipient VARCHAR(529),
             data_blob MEDIUMBLOB
         )`,
@@ -143,17 +145,7 @@ func (s *SQLStorage) CleanupChallenges() error {
 
 // / Implements DataStorage interface
 func (s *SQLStorage) GetLatestData(userId string) ([]byte, error) {
-	tx, err := s.Db.Begin()
-	if err != nil {
-		return nil, err
-	}
-	defer func() {
-		if err != nil {
-			tx.Rollback()
-		}
-	}()
-
-	rows, err := tx.Query("SELECT data_blob FROM data WHERE recipient = ? ORDER BY id", userId)
+	rows, err := s.Db.Query("SELECT data_blob, ack_id FROM data WHERE recipient = ? ORDER BY id", userId)
 	if err != nil {
 		return nil, err
 	}
@@ -161,10 +153,16 @@ func (s *SQLStorage) GetLatestData(userId string) ([]byte, error) {
 
 	var allData []byte
 	for rows.Next() {
-		var data []byte
-		if err := rows.Scan(&data); err != nil {
+        var (
+            data  []byte
+            ackId []byte
+        )
+
+		if err := rows.Scan(&data, &ackId); err != nil {
 			return nil, err
 		}
+
+        data = append(ackId, data...)
 		allData = append(allData, data...)
 	}
 
@@ -172,16 +170,29 @@ func (s *SQLStorage) GetLatestData(userId string) ([]byte, error) {
 		return nil, err
 	}
 
-	_, err = tx.Exec("DELETE FROM data WHERE recipient = ?", userId)
-	if err != nil {
-		return nil, err
-	}
 
-	return allData, tx.Commit()
+	return allData, nil
 }
 
-func (s *SQLStorage) InsertData(dataBlob []byte, recipientId string) error {
-	_, err := s.Db.Exec(`INSERT INTO data (recipient, data_blob) VALUES (?, ?)`, recipientId, dataBlob)
+
+func (s *SQLStorage) DeleteAck(userId string, acks [][]byte) error {
+    placeholders := make([]string, len(acks))
+    args := make([]interface{}, len(acks))
+    for i, v := range acks {
+        placeholders[i] = "?"
+        args[i] = v 
+    }
+
+    args = append([]any{userId}, args...)
+
+
+    query := fmt.Sprintf("DELETE FROM data WHERE recipient = ? AND ack_id IN (%s)", strings.Join(placeholders, ","))
+    _, err := s.Db.Exec(query, args...)
+    return err
+}
+
+func (s *SQLStorage) InsertData(dataBlob []byte, ackId []byte, recipientId string) error {
+	_, err := s.Db.Exec(`INSERT INTO data (recipient, ack_id, data_blob) VALUES (?, ?, ?)`, recipientId, ackId, dataBlob)
 	return err
 }
 

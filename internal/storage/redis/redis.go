@@ -2,6 +2,7 @@ package redis
 
 import (
 	"context"
+    "bytes"
 	"github.com/redis/go-redis/v9"
 )
 
@@ -28,38 +29,43 @@ func New(addr string, port string, password string, db int) (*RedisStorage, erro
 func (s *RedisStorage) GetLatestData(userId string) ([]byte, error) {
 	ctx := context.Background()
 
-	// Lua script: get current items, remove them from the list
-	luaScript := `
-        local len = redis.call('LLEN', KEYS[1])
-        if len == 0 then
-            return {}
-        end
-        local items = redis.call('LRANGE', KEYS[1], 0, len - 1)
-        redis.call('LTRIM', KEYS[1], len, -1)
-        return items
-    `
-
-	// Execute Lua script
-	result, err := s.client.Eval(ctx, luaScript, []string{userId}).Result()
+	result, err := s.client.LRange(ctx, userId, 0, -1).Result() 
 	if err != nil {
 		return nil, err
 	}
 
-	// Convert []interface{} to []byte
 	var allData []byte
-	if items, ok := result.([]interface{}); ok {
-		for _, item := range items {
-			if b, ok := item.(string); ok {
-				allData = append(allData, []byte(b)...)
-			}
-		}
+    for _, value := range result {
+		allData = append(allData, []byte(value)...) 
 	}
 
 	return allData, nil
 }
 
-func (s *RedisStorage) InsertData(dataBlob []byte, recipientId string) error {
-	return s.client.RPush(context.Background(), recipientId, dataBlob).Err()
+func (s *RedisStorage) DeleteAck(userId string, acks [][]byte) error {
+	ctx := context.Background()
+    values, err := s.client.LRange(ctx, userId, 0, -1).Result()
+	if err != nil {
+		return err
+	}
+
+	for _, v := range values {
+		data := []byte(v)
+
+		for _, ackId := range acks {
+			if bytes.HasPrefix(data, ackId) {
+				if err := s.client.LRem(ctx, userId, 0, v).Err(); err != nil {
+					return err
+				}
+				break 
+			}
+		}
+	}
+    return nil
+}
+func (s *RedisStorage) InsertData(dataBlob []byte, ackId []byte, recipientId string) error {
+    dataBlob = append(dataBlob, ackId...)
+    return s.client.RPush(context.Background(), recipientId, dataBlob).Err()
 }
 
 func (s *RedisStorage) ExitCleanup() error {

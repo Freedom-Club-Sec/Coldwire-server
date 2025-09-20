@@ -3,6 +3,7 @@ package data
 import (
 	"bytes"
 	"encoding/json"
+    "encoding/base64"
 	"errors"
 	"fmt"
 	"io"
@@ -77,6 +78,20 @@ func (svc *DataService) GetLatestData(userId string) ([]byte, error) {
 	return svc.Store.GetLatestData(userId)
 }
 
+func (svc *DataService) DeleteAck(userId string, acks []string) error {
+    var err error
+    args := make([][]byte, len(acks))
+    for i, v := range acks {
+        args[i], err =  base64.RawURLEncoding.DecodeString(v)
+        if err != nil {
+            return err
+        }
+    }
+
+    return svc.Store.DeleteAck(userId, args)
+     
+}
+
 func (svc *DataService) InsertData(data []byte, senderId string, recipientId string) error {
 	if utils.IsAllDigits(recipientId) {
 		if len(recipientId) != 16 {
@@ -108,7 +123,12 @@ func (svc *DataService) InsertData(data []byte, senderId string, recipientId str
 			return err
 		}
 
-		return svc.Store.InsertData(newDataBlob, recipientId)
+        ackId, err := utils.SecureRandomBytes(32)
+        if err != nil {
+            return err
+        }
+
+		return svc.Store.InsertData(newDataBlob, ackId, recipientId)
 
 		// Max DNS length is 253, 16 for recipient user ID, and 1 for `@`
 	} else if len(recipientId) > 253+16+1 || len(recipientId) <= 17 {
@@ -286,7 +306,11 @@ func (svc *DataService) FederationProcessor(senderId string, recipientId string,
 		return err
 	}
 
-	return svc.Store.InsertData(newDataBlob, recipientId)
+    ackId, err := utils.SecureRandomBytes(32)
+    if err != nil {
+        return err
+    }
+	return svc.Store.InsertData(newDataBlob, ackId, recipientId)
 }
 
 func (svc *DataService) FetchAndSaveServerInfo(url string) (*mldsa87.PublicKey, string, error) {

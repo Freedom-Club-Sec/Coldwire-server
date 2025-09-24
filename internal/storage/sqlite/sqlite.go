@@ -2,10 +2,13 @@ package sqlite
 
 import (
 	"database/sql"
+    "log/slog"
 	"errors"
     "strings"
 	"fmt"
-	_ "modernc.org/sqlite"
+    isqlite "modernc.org/sqlite"
+    isqlitelib "modernc.org/sqlite/lib"
+
 )
 
 type SQLiteStorage struct {
@@ -15,8 +18,18 @@ type SQLiteStorage struct {
 func New(path string) (*SQLiteStorage, error) {
 	db, err := sql.Open("sqlite", path)
 	if err != nil {
-		return nil, fmt.Errorf("failed to open sqlite db: %w", err)
+		return nil, fmt.Errorf("Failed to open sqlite db: %w", err)
 	}
+
+    
+    if _, err := db.Exec(`PRAGMA journal_mode = WAL;`); err != nil {
+        return nil, err
+    }
+
+    if _, err := db.Exec(`PRAGMA synchronous = NORMAL;`); err != nil {
+        return nil, err
+    }
+
 
 	stmts := []string{
 		`CREATE TABLE IF NOT EXISTS users (
@@ -102,11 +115,6 @@ func (s *SQLiteStorage) GetServerInfo(url string) ([]byte, string, error) {
 	return publicKey, refetchDate, nil
 }
 
-func (s *SQLiteStorage) SaveCh(challenge []byte, id interface{}, publicKey interface{}) error {
-	_, err := s.Db.Exec(`INSERT INTO challenges (challenge, id, public_key) VALUES (?, ?, ?)`, challenge, id, publicKey)
-	return err
-}
-
 func (s *SQLiteStorage) GetChallengeData(challenge []byte) ([]byte, string, error) {
 	var (
 		publicKey []byte
@@ -137,10 +145,25 @@ func (s *SQLiteStorage) CleanupChallenges() error {
 	return err
 }
 
+
+func isSQLiteBusy(err error) bool {
+    var se *isqlite.Error
+    if errors.As(err, &se) {
+        if se.Code() == isqlitelib.SQLITE_BUSY {
+            slog.Debug("SQLite database is locked.", "error", err)
+            return true
+        }
+    }
+    return false
+}
+
 // / Implements DataStorage interface
 func (s *SQLiteStorage) GetLatestData(userId string) ([]byte, error) {
 	rows, err := s.Db.Query("SELECT data_blob, ack_id FROM data WHERE recipient = ? ORDER BY id", userId)
 	if err != nil {
+        if isSQLiteBusy(err) {
+            return nil, nil
+        }
 		return nil, err
 	}
 	defer rows.Close()
@@ -161,6 +184,9 @@ func (s *SQLiteStorage) GetLatestData(userId string) ([]byte, error) {
 	}
 
 	if err := rows.Err(); err != nil {
+        if isSQLiteBusy(err) {
+            return nil, nil
+        }
 		return nil, err
 	}
 
@@ -179,14 +205,28 @@ func (s *SQLiteStorage) DeleteAck(userId string, acks [][]byte) error {
 
     args = append([]any{userId}, args...)
 
+    var err error
 
-    query := fmt.Sprintf("DELETE FROM data WHERE recipient = ? AND ack_id IN (%s)", strings.Join(placeholders, ","))
-    _, err := s.Db.Exec(query, args...)
+    for {
+        query := fmt.Sprintf("DELETE FROM data WHERE recipient = ? AND ack_id IN (%s)", strings.Join(placeholders, ","))
+        _, err = s.Db.Exec(query, args...)
+        if isSQLiteBusy(err) {
+            continue
+        }
+        break
+    }
     return err
 }
 
 func (s *SQLiteStorage) InsertData(dataBlob []byte, ackId []byte, recipientId string) error {
-	_, err := s.Db.Exec(`INSERT INTO data (recipient, ack_id, data_blob) VALUES (?, ?, ?)`, recipientId, ackId, dataBlob)
+    var err error
+    for {
+        _, err = s.Db.Exec(`INSERT INTO data (recipient, ack_id, data_blob) VALUES (?, ?, ?)`, recipientId, ackId, dataBlob)
+        if isSQLiteBusy(err) {
+            continue
+        }
+        break
+    }
 	return err
 }
 

@@ -1,42 +1,73 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Coldwire Server</title>
-    <style>
-        body {
-            font-family: sans-serif;
-            background: #f4f4f4;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            margin: 0;
-            text-align: center;
-            color: #333;
-        }
-        .container {
-            background: white;
-            padding: 2rem;
-            border-radius: 12px;
-            box-shadow: 0 0 20px rgba(0,0,0,0.1);
-        }
-        a { 
-            color: #007bff; 
-            text-decoration: none; 
-        }
-        a:hover {
-            text-decoration: underline; 
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Coldwire Server</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      background: #f4f4f4;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+      margin: 0;
+      color: #333;
+    }
+
+    main {
+      flex: 1; /* take remaining space */
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+    }
+
+    .container {
+      background: white;
+      padding: 2rem;
+      border-radius: 12px;
+      box-shadow: -10px 20px 20px rgba(0, 0, 0, 0.1);
+      max-width: 600px;
+      width: 90%;
+    }
+
+    a {
+      color: #007bff;
+      text-decoration: none;
+    }
+    a:hover {
+      text-decoration: underline;
+    }
+
+    footer {
+        padding: 0.75rem 1rem;
+        font-size: 0.85rem;
+        color: #777;
+        text-align: right;
+    }
+    footer img {
+        vertical-align: middle;
+        max-width: 60px;
+        margin-left: 0.5rem;
+        border-radius: 50%; 
+    }
+
+  </style>
 </head>
 <body>
+  <main>
     <div class="container">
-        <h1>Welcome to Coldwire!</h1>
-        <p>This is a <strong>Coldwire</strong> federated chat server.</p>
-        <p>Connect via a <a hrefe="https://github.com/Freedom-Club-Sec/Coldwire-Desktop">Coldwire client</a> implementation to start chatting.</p>
-        <p>Learn more about Coldwire on <a href="https://github.com/Freedom-Club-Sec/Coldwire-Desktop" target="_blank">GitHub</a>.</p>
+      <h1>Welcome to Coldwire!</h1>
+      <p>This is a <strong>Coldwire</strong> federated chat server.</p>
+      <p>Connect via a <a href="https://github.com/Freedom-Club-Sec/Coldwire-Desktop">Coldwire client implementation</a> to start chatting securely.</p>
+      <p>Learn more about Coldwire on <a href="https://github.com/Freedom-Club-Sec/Coldwire-Desktop" target="_blank">GitHub</a>.</p>
     </div>
+  </main>
+
+  <footer>
+      © 2025 Freedom Club (Sec) — Open Source (MIT)
+      <a href="https://github.com/Freedom-Club-Sec" target="_blank"><img src="static/freedom-club-logo-small.png" alt="Freedom Club (Sec) Logo"></a>
+  </footer>
 </body>
 </html>

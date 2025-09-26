@@ -2,3 +2,5 @@ coldwire_database.sqlite*
 testing_config.json
 bin
 *.swp
+*.swo
+*.swn

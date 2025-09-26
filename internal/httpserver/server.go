@@ -2,7 +2,8 @@ package httpserver
 
 import (
 	"fmt"
-    "strings"
+    "mime"
+    "path/filepath"
 	"net/http"
     "embed"
 
@@ -23,7 +24,7 @@ type DBServices struct {
 	DataService *data.DataService
 }
 
-//go:embed web/*
+//go:embed web/**
 var webFiles embed.FS
 
 func (s *Server) registerRoutes() {
@@ -50,14 +51,11 @@ func (s *Server) registerRoutes() {
             return
         }
 
-        // Simple content-type detection for html/css/js
-        switch {
-        case strings.HasSuffix(path, ".html"):
-            w.Header().Set("Content-Type", "text/html; charset=utf-8")
-        case strings.HasSuffix(path, ".css"):
-            w.Header().Set("Content-Type", "text/css; charset=utf-8")
-        case strings.HasSuffix(path, ".js"):
-            w.Header().Set("Content-Type", "application/javascript")
+        ext := filepath.Ext(path)
+        if ctype := mime.TypeByExtension(ext); ctype != "" {
+            w.Header().Set("Content-Type", ctype)
+        } else {
+            w.Header().Set("Content-Type", "application/octet-stream")
         }
 
         w.Write(data)

@@ -64,7 +64,7 @@ func (s *RedisStorage) DeleteAck(userId string, acks [][]byte) error {
     return nil
 }
 func (s *RedisStorage) InsertData(dataBlob []byte, ackId []byte, recipientId string) error {
-    dataBlob = append(dataBlob, ackId...)
+    dataBlob = append(ackId, dataBlob...)
     return s.client.RPush(context.Background(), recipientId, dataBlob).Err()
 }
 

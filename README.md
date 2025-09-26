@@ -2,12 +2,14 @@
 Coldwire federated server implementation in Golang. 
 
 # Configuration
-Copy the example configuration from from [docs/example_configuration.json](https://github.com/Freedom-Club-Sec/Coldwire-server/blob/main/docs/example_config.json)
+Copy the example configuration from: [docs/example_configuration.json](https://github.com/Freedom-Club-Sec/Coldwire-server/blob/main/docs/example_config.json)
 
 Put either your server DNS name or IP in `Your_domain_or_IP`
-That's it. No further modification needed
 
-If you want better performance, you might want configure "`SQL`" and or "`Redis`" services: consult [docs/configuration.md for more details](https://github.com/Freedom-Club-Sec/Coldwire-server/blob/main/docs/configuration.md)
+That's it! No further modification needed
+
+If you want better performance, you might want configure "`SQL`" and or "`Redis`" services, 
+consult [docs/configuration.md for more details](https://github.com/Freedom-Club-Sec/Coldwire-server/blob/main/docs/configuration.md)
 
 
 # Setup
@@ -28,16 +30,10 @@ The compiled binary will be in `bin/` folder.
 ./coldwire-server-linux-amd64 --help
 Usage of ./coldwire-server-linux-amd64:
   -c string
-        Path to JSON configuration file (shorthand) (default "configs/config.json")
-  -config string
         Path to JSON configuration file (default "configs/config.json")
   -h string
-        Server address to listen on (shorthand) (default "127.0.0.1")
-  -host string
         Server address to listen on (default "127.0.0.1")
   -p int
-        Server port to listen on (shorthand) (default 8000)
-  -port int
         Server port to listen on (default 8000)
 ```
 
@@ -45,5 +41,5 @@ Usage of ./coldwire-server-linux-amd64:
 Run server:
 
 ```bash
-./coldwire-server -c your_config_file.json
+./coldwire-server-linux-amd64 -c Your_Config_File.json
 ```

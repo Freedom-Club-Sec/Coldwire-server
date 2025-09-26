@@ -2,13 +2,12 @@ package sqlite
 
 import (
 	"database/sql"
-    "log/slog"
 	"errors"
-    "strings"
 	"fmt"
-    isqlite "modernc.org/sqlite"
-    isqlitelib "modernc.org/sqlite/lib"
-
+	"log/slog"
+	isqlite "modernc.org/sqlite"
+	isqlitelib "modernc.org/sqlite/lib"
+	"strings"
 )
 
 type SQLiteStorage struct {
@@ -21,15 +20,13 @@ func New(path string) (*SQLiteStorage, error) {
 		return nil, fmt.Errorf("Failed to open sqlite db: %w", err)
 	}
 
-    
-    if _, err := db.Exec(`PRAGMA journal_mode = WAL;`); err != nil {
-        return nil, err
-    }
+	if _, err := db.Exec(`PRAGMA journal_mode = WAL;`); err != nil {
+		return nil, err
+	}
 
-    if _, err := db.Exec(`PRAGMA synchronous = NORMAL;`); err != nil {
-        return nil, err
-    }
-
+	if _, err := db.Exec(`PRAGMA synchronous = NORMAL;`); err != nil {
+		return nil, err
+	}
 
 	stmts := []string{
 		`CREATE TABLE IF NOT EXISTS users (
@@ -145,25 +142,24 @@ func (s *SQLiteStorage) CleanupChallenges() error {
 	return err
 }
 
-
 func isSQLiteBusy(err error) bool {
-    var se *isqlite.Error
-    if errors.As(err, &se) {
-        if se.Code() == isqlitelib.SQLITE_BUSY {
-            slog.Debug("SQLite database is locked.", "error", err)
-            return true
-        }
-    }
-    return false
+	var se *isqlite.Error
+	if errors.As(err, &se) {
+		if se.Code() == isqlitelib.SQLITE_BUSY {
+			slog.Debug("SQLite database is locked.", "error", err)
+			return true
+		}
+	}
+	return false
 }
 
 // / Implements DataStorage interface
 func (s *SQLiteStorage) GetLatestData(userId string) ([]byte, error) {
 	rows, err := s.Db.Query("SELECT data_blob, ack_id FROM data WHERE recipient = ? ORDER BY id", userId)
 	if err != nil {
-        if isSQLiteBusy(err) {
-            return nil, nil
-        }
+		if isSQLiteBusy(err) {
+			return nil, nil
+		}
 		return nil, err
 	}
 	defer rows.Close()
@@ -171,62 +167,60 @@ func (s *SQLiteStorage) GetLatestData(userId string) ([]byte, error) {
 	var allData []byte
 	for rows.Next() {
 		var (
-            data  []byte
-            ackId []byte
-        )
+			data  []byte
+			ackId []byte
+		)
 
 		if err := rows.Scan(&data, &ackId); err != nil {
 			return nil, err
 		}
 
-        data = append(ackId, data...)
+		data = append(ackId, data...)
 		allData = append(allData, data...)
 	}
 
 	if err := rows.Err(); err != nil {
-        if isSQLiteBusy(err) {
-            return nil, nil
-        }
+		if isSQLiteBusy(err) {
+			return nil, nil
+		}
 		return nil, err
 	}
-
 
 	return allData, nil
 }
 
-
 func (s *SQLiteStorage) DeleteAck(userId string, acks [][]byte) error {
-    placeholders := make([]string, len(acks))
-    args := make([]interface{}, len(acks))
-    for i, v := range acks {
-        placeholders[i] = "?"
-        args[i] = v
-    }
+	placeholders := make([]string, len(acks))
+	args := make([]interface{}, len(acks))
+	for i, v := range acks {
+		placeholders[i] = "?"
+		args[i] = v
+	}
 
-    args = append([]any{userId}, args...)
+	args = append([]any{userId}, args...)
 
-    var err error
+	var err error
 
-    for {
-        query := fmt.Sprintf("DELETE FROM data WHERE recipient = ? AND ack_id IN (%s)", strings.Join(placeholders, ","))
-        _, err = s.Db.Exec(query, args...)
-        if isSQLiteBusy(err) {
-            continue
-        }
-        break
-    }
-    return err
+	for {
+		query := fmt.Sprintf("DELETE FROM data WHERE recipient = ? AND ack_id IN (%s)", strings.Join(placeholders, ","))
+		_, err = s.Db.Exec(query, args...)
+		if isSQLiteBusy(err) {
+			continue
+		}
+		break
+	}
+	return err
 }
 
 func (s *SQLiteStorage) InsertData(dataBlob []byte, ackId []byte, recipientId string) error {
-    var err error
-    for {
-        _, err = s.Db.Exec(`INSERT INTO data (recipient, ack_id, data_blob) VALUES (?, ?, ?)`, recipientId, ackId, dataBlob)
-        if isSQLiteBusy(err) {
-            continue
-        }
-        break
-    }
+	var err error
+	for {
+		_, err = s.Db.Exec(`INSERT INTO data (recipient, ack_id, data_blob) VALUES (?, ?, ?)`, recipientId, ackId, dataBlob)
+		if isSQLiteBusy(err) {
+			continue
+		}
+		break
+	}
 	return err
 }
 

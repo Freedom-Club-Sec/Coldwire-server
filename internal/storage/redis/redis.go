@@ -1,8 +1,8 @@
 package redis
 
 import (
+	"bytes"
 	"context"
-    "bytes"
 	"github.com/redis/go-redis/v9"
 )
 
@@ -29,14 +29,14 @@ func New(addr string, port string, password string, db int) (*RedisStorage, erro
 func (s *RedisStorage) GetLatestData(userId string) ([]byte, error) {
 	ctx := context.Background()
 
-	result, err := s.client.LRange(ctx, userId, 0, -1).Result() 
+	result, err := s.client.LRange(ctx, userId, 0, -1).Result()
 	if err != nil {
 		return nil, err
 	}
 
 	var allData []byte
-    for _, value := range result {
-		allData = append(allData, []byte(value)...) 
+	for _, value := range result {
+		allData = append(allData, []byte(value)...)
 	}
 
 	return allData, nil
@@ -44,7 +44,7 @@ func (s *RedisStorage) GetLatestData(userId string) ([]byte, error) {
 
 func (s *RedisStorage) DeleteAck(userId string, acks [][]byte) error {
 	ctx := context.Background()
-    values, err := s.client.LRange(ctx, userId, 0, -1).Result()
+	values, err := s.client.LRange(ctx, userId, 0, -1).Result()
 	if err != nil {
 		return err
 	}
@@ -57,15 +57,15 @@ func (s *RedisStorage) DeleteAck(userId string, acks [][]byte) error {
 				if err := s.client.LRem(ctx, userId, 0, v).Err(); err != nil {
 					return err
 				}
-				break 
+				break
 			}
 		}
 	}
-    return nil
+	return nil
 }
 func (s *RedisStorage) InsertData(dataBlob []byte, ackId []byte, recipientId string) error {
-    dataBlob = append(ackId, dataBlob...)
-    return s.client.RPush(context.Background(), recipientId, dataBlob).Err()
+	dataBlob = append(ackId, dataBlob...)
+	return s.client.RPush(context.Background(), recipientId, dataBlob).Err()
 }
 
 func (s *RedisStorage) ExitCleanup() error {

@@ -90,28 +90,26 @@ func (s *Server) dataLongpollHandler(w http.ResponseWriter, r *http.Request) {
 	userId := jwtClaims["user_id"].(string)
 
 	slog.Info("Received data longpoll~!!!")
-    
-    acks := r.URL.Query()["acks"] 
-    if len(acks) > 0 {
 
-        slog.Info("Received acks, we will start deleting them.", "acks", acks)
-	    err := s.DbSvcs.DataService.DeleteAck(userId, acks)
-        if err != nil {
+	acks := r.URL.Query()["acks"]
+	if len(acks) > 0 {
+
+		slog.Info("Received acks, we will start deleting them.", "acks", acks)
+		err := s.DbSvcs.DataService.DeleteAck(userId, acks)
+		if err != nil {
 			slog.Error("Error while deleting acknowledged data", "userId", userId, "error", err, "acks", acks)
 			http.Error(w, "Error while processing request.", http.StatusBadRequest)
 			return
-        }
-    } else {
-        slog.Info("No acks provided")
-    }
-
+		}
+	} else {
+		slog.Info("No acks provided")
+	}
 
 	ticker := time.NewTicker(1 * time.Second)
 	defer ticker.Stop()
 
 	timeout := time.NewTimer(time.Second * constants.LONGPOLL_MAX)
 	defer timeout.Stop()
-
 
 	for {
 		select {

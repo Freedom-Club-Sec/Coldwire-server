@@ -2,8 +2,8 @@ package data
 
 import (
 	"bytes"
+	"encoding/base64"
 	"encoding/json"
-    "encoding/base64"
 	"errors"
 	"fmt"
 	"io"
@@ -79,17 +79,17 @@ func (svc *DataService) GetLatestData(userId string) ([]byte, error) {
 }
 
 func (svc *DataService) DeleteAck(userId string, acks []string) error {
-    var err error
-    args := make([][]byte, len(acks))
-    for i, v := range acks {
-        args[i], err =  base64.RawURLEncoding.DecodeString(v)
-        if err != nil {
-            return err
-        }
-    }
+	var err error
+	args := make([][]byte, len(acks))
+	for i, v := range acks {
+		args[i], err = base64.RawURLEncoding.DecodeString(v)
+		if err != nil {
+			return err
+		}
+	}
 
-    return svc.Store.DeleteAck(userId, args)
-     
+	return svc.Store.DeleteAck(userId, args)
+
 }
 
 func (svc *DataService) InsertData(data []byte, senderId string, recipientId string) error {
@@ -123,10 +123,10 @@ func (svc *DataService) InsertData(data []byte, senderId string, recipientId str
 			return err
 		}
 
-        ackId, err := utils.SecureRandomBytes(32)
-        if err != nil {
-            return err
-        }
+		ackId, err := utils.SecureRandomBytes(32)
+		if err != nil {
+			return err
+		}
 
 		return svc.Store.InsertData(newDataBlob, ackId, recipientId)
 
@@ -306,10 +306,10 @@ func (svc *DataService) FederationProcessor(senderId string, recipientId string,
 		return err
 	}
 
-    ackId, err := utils.SecureRandomBytes(32)
-    if err != nil {
-        return err
-    }
+	ackId, err := utils.SecureRandomBytes(32)
+	if err != nil {
+		return err
+	}
 	return svc.Store.InsertData(newDataBlob, ackId, recipientId)
 }
 

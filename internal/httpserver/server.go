@@ -1,11 +1,11 @@
 package httpserver
 
 import (
+	"embed"
 	"fmt"
-    "mime"
-    "path/filepath"
+	"mime"
 	"net/http"
-    "embed"
+	"path/filepath"
 
 	"github.com/Freedom-Club-Sec/Coldwire-server/internal/authenticate"
 	"github.com/Freedom-Club-Sec/Coldwire-server/internal/config"
@@ -37,29 +37,28 @@ func (s *Server) registerRoutes() {
 	s.mux.HandleFunc("/federation/info", s.federationInfoHandler)
 	s.mux.HandleFunc("/federation/send", s.federationSendHandler)
 
+	s.mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		path := r.URL.Path
+		if path == "/" {
+			path = "/index.html"
+		}
 
-    s.mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-        path := r.URL.Path
-        if path == "/" {
-            path = "/index.html"
-        }
+		// Serve file from embedded FS
+		data, err := webFiles.ReadFile("web" + path)
+		if err != nil {
+			http.NotFound(w, r)
+			return
+		}
 
-        // Serve file from embedded FS
-        data, err := webFiles.ReadFile("web" + path)
-        if err != nil {
-            http.NotFound(w, r)
-            return
-        }
+		ext := filepath.Ext(path)
+		if ctype := mime.TypeByExtension(ext); ctype != "" {
+			w.Header().Set("Content-Type", ctype)
+		} else {
+			w.Header().Set("Content-Type", "application/octet-stream")
+		}
 
-        ext := filepath.Ext(path)
-        if ctype := mime.TypeByExtension(ext); ctype != "" {
-            w.Header().Set("Content-Type", ctype)
-        } else {
-            w.Header().Set("Content-Type", "application/octet-stream")
-        }
-
-        w.Write(data)
-    })
+		w.Write(data)
+	})
 
 }
 

@@ -1,5 +1,5 @@
 # Coldwire-server
-[![Coverage](https://goreportcard.com/badge/github.com/Freedom-Club-Sec/Coldwire-server)](https://goreportcard.com/report/github.com/Freedom-Club-Sec/Coldwire-server)
+[![Tests](https://github.com/Freedom-Club-Sec/Coldwire-server/actions/workflows/tests.yml/badge.svg)](https://github.com/Freedom-Club-Sec/Coldwire-server/actions/workflows/tests.yml) [![Coverage](https://goreportcard.com/badge/github.com/Freedom-Club-Sec/Coldwire-server)](https://goreportcard.com/report/github.com/Freedom-Club-Sec/Coldwire-server)
 
 Coldwire federated server implementation in Golang. 
 

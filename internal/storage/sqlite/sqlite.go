@@ -62,37 +62,71 @@ func New(path string) (*SQLiteStorage, error) {
 
 // Implement UserStorage interface
 func (s *SQLiteStorage) SaveUser(id string, publicKey []byte) error {
-	_, err := s.Db.Exec(`INSERT INTO users (id, public_key) VALUES (?, ?)`, id, publicKey)
+    var err error
+    for {
+        _, err = s.Db.Exec(`INSERT INTO users (id, public_key) VALUES (?, ?)`, id, publicKey)
+        if isSQLiteBusy(err) {
+            continue
+        }
+        break
+    }
 	return err
 }
 
 func (s *SQLiteStorage) GetUserPublicKeyById(id string) ([]byte, error) {
-	var publicKey []byte
+	var (
+        publicKey []byte
+        err error
+    )
 
-	err := s.Db.QueryRow("SELECT public_key FROM users WHERE id = ?", id).Scan(&publicKey)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			return nil, nil
-		}
-		return nil, err
-	}
+    for {
+        err = s.Db.QueryRow("SELECT public_key FROM users WHERE id = ?", id).Scan(&publicKey)
+        if isSQLiteBusy(err) {
+            continue
+        }
+        if err != nil {
+            if err == sql.ErrNoRows {
+                return nil, nil
+            }
+            return nil, err
+        }
+        break
+    }
 
-	return publicKey, nil
+	return publicKey, err
 }
 
 func (s *SQLiteStorage) SaveChallenge(challenge []byte, id interface{}, publicKey interface{}) error {
-	_, err := s.Db.Exec(`INSERT INTO challenges (challenge, id, public_key) VALUES (?, ?, ?)`, challenge, id, publicKey)
+	var err error
+    for {
+        _, err = s.Db.Exec(`INSERT INTO challenges (challenge, id, public_key) VALUES (?, ?, ?)`, challenge, id, publicKey)
+        if isSQLiteBusy(err) {
+            continue
+        }
+        break
+    }
 	return err
 }
 
 func (s *SQLiteStorage) SaveServerInfo(url string, publicKey []byte, refetchDate string) error {
-	_, err := s.Db.Exec(`INSERT INTO servers (url, public_key, refetch_date) VALUES (?, ?, ?)`, url, publicKey, refetchDate)
-	if err != nil {
-		_, err = s.Db.Exec(`UPDATE servers SET public_key = ?, refetch_date = ? WHERE url = ?`, publicKey, refetchDate, url)
-		if err != nil {
-			return err
-		}
-	}
+    var err error
+    for {
+        _, err = s.Db.Exec(`INSERT INTO servers (url, public_key, refetch_date) VALUES (?, ?, ?)`, url, publicKey, refetchDate)
+        if err != nil {
+		    if isSQLiteBusy(err) {
+                continue
+            }
+
+            _, err = s.Db.Exec(`UPDATE servers SET public_key = ?, refetch_date = ? WHERE url = ?`, publicKey, refetchDate, url)
+            if err != nil {
+		        if isSQLiteBusy(err) {
+                    continue
+                }
+                return err
+            }
+        }
+        break
+    }
 	return err
 }
 
@@ -106,6 +140,7 @@ func (s *SQLiteStorage) GetServerInfo(url string) ([]byte, string, error) {
 		if err == sql.ErrNoRows {
 			return nil, "", nil
 		}
+
 		return nil, "", err
 	}
 
@@ -120,7 +155,10 @@ func (s *SQLiteStorage) GetChallengeData(challenge []byte) ([]byte, string, erro
 
 	err := s.Db.QueryRow("SELECT id, public_key FROM challenges WHERE challenge = ?", challenge).Scan(&userId, &publicKey)
 	if err != nil {
-		return nil, "", err
+        if isSQLiteBusy(err) {
+		    return nil, "", nil
+        }
+        return nil, "", err
 	}
 
 	if userId.Valid {
@@ -138,7 +176,14 @@ func (s *SQLiteStorage) GetChallengeData(challenge []byte) ([]byte, string, erro
 }
 
 func (s *SQLiteStorage) CleanupChallenges() error {
-	_, err := s.Db.Exec(`DELETE FROM challenges`)
+    var err error
+    for {
+        _, err = s.Db.Exec(`DELETE FROM challenges`)
+        if isSQLiteBusy(err) {
+            continue
+        }
+        break
+    }
 	return err
 }
 

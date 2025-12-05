@@ -16,7 +16,7 @@ consult [docs/configuration.md for more details](https://github.com/Freedom-Club
 
 # Setup
 
-Download prebuilt binaries from releases.
+Download prebuilt binaries from releases (All builds are completely reproducible)
 
 Or optionally compile the source code using:
 ```bash
@@ -25,6 +25,8 @@ cd Coldwire-server
 make build
 ```
 The compiled binary will be in `bin/` folder.
+
+
 
 # Example Usage
 
